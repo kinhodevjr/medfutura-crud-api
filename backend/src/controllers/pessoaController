@@ -1,0 +1,11 @@
+async function criar_pessoa (req, res){
+    dados = req.body
+    console.log = dados
+    res.status(201).json({
+        "mensagem": "Pessoa criada com sucesso!"
+    })
+}
+
+module.exports = {
+    criar_pessoa
+}
