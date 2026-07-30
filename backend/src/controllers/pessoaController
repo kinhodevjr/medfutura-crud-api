@@ -58,13 +58,15 @@ async function criar_pessoa (req, res){
         })
    }
 
-   console.log(apelidos.rows)
 
+   const usuario = await db.query(`INSERT INTO pessoas (apelido, nome, nascimento, stack)
+    VALUES ($1, $2, $3, $4) RETURNING id, apelido, nome, nascimento, stack`, [apelido, nome, nascimento, stack || null])
 
+    const pessoa_criada = usuario.rows[0];
    
 
     return res.status(201).json({
-        "status": "true"
+        mensagem: (pessoa_criada)
     })
 
 
