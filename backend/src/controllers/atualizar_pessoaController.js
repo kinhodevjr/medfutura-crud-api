@@ -48,7 +48,28 @@ async function atualizar_pessoa(req, res) {
         }
     }
 
-   
+    // verificar se existe outra pessoa com mesmo apelido para nao ter conflito
+
+    const verificar_apelido = await db.query(`SELECT * FROM pessoas WHERE id = $1 AND $2`, [apelido, id])
+    if (verificar_apelido.rows.length !== 0){
+        return res.status(422).json({
+            mensagem: "apelido pertence a outra pessoa!"
+        })
+    }
+        
+    const resultado = await db.query(`UPDATE pessoas SET apelido = $1, nome = $2, nascimento = $3, stack = $4 WHERE id = $5 RETURNING id, apelido, nome, nascimento, stack`, [apelido, nome, nascimento, stack || null, id])
+    if (resultado.rows.length === 0) {
+    return res.status(422).json({
+        mensagem: "Pessoa não encontrada!"
+    })
+}
+
+    return res.status(200).json(resultado.rows[0]);
+
+
+
+
+
 }
  module.exports = {
         atualizar_pessoa
