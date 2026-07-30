@@ -1,3 +1,5 @@
+const db = require("../database/connection.js")
+
 async function criar_pessoa (req, res){
     let {apelido, nome, nascimento, stack} = req.body;
     console.log(req.body)
@@ -45,13 +47,23 @@ async function criar_pessoa (req, res){
             return res.status(422).send("A stack ultrapassou o limite de caracter, coloque menos de 32!")
         }
     }
-
-        
     }
+
+
+   const apelidos= await db.query(`SELECT apelido FROM pessoas WHERE apelido = $1`,[apelido])
+
+   if (apelidos.rows.length !== 0){
+        return res.status(400).json({
+            mensagem: "Apelido já existente!"
+        })
+   }
+
+   console.log(apelidos.rows)
+
 
    
 
-    return res.status(200).json({
+    return res.status(201).json({
         "status": "true"
     })
 
