@@ -19,15 +19,15 @@ As versões completas de todas as dependências estão em [`backend/package.json
 ```
 backend/
 ├── src/
-│   ├── app.js                 # configuração do Express e rotas
-│   ├── server.js               # inicialização do servidor
+│   ├── app.js                
+│   ├── server.js               
 │   ├── database/
-│   │   └── connection.js       # conexão com o PostgreSQL (pg Pool)
-│   ├── routes/                 # definição das rotas
-│   └── controllers/             # regras de negócio de cada rota
+│   │   └── connection.js       
+│   ├── routes/                 
+│   └── controllers/           
 ├── sql/
-│   └── schema.sql              # script de criação da tabela
-├── .env                         # variáveis de ambiente (exemplo)
+│   └── schema.sql            
+├── .env                        
 ├── docker-compose.yml
 └── Dockerfile
 ```
@@ -35,7 +35,6 @@ backend/
 ## Como rodar o projeto
 
 ### Opção 1 — Com Docker (recomendado)
-
 
 ```bash
 cd backend
