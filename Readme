@@ -1,0 +1,194 @@
+# MedFutura CRUD API
+
+API REST desenvolvida em **Node.js**, **Express** e **PostgreSQL** para o desafio técnico da 2ª fase do processo seletivo de Desenvolvedor(a) Backend da MedFutura Distribuidora.
+
+A API implementa um CRUD de **pessoas**, permitindo criar, consultar (por id ou por termo de busca), atualizar e remover registros.
+
+## Tecnologias utilizadas
+
+- Node.js
+- Express `^5.2.1`
+- PostgreSQL (via `pg ^8.22.0`)
+- dotenv `^17.4.2`
+- Docker e Docker Compose
+
+As versões completas de todas as dependências estão em [`backend/package.json`](./backend/package.json) e [`backend/package-lock.json`](./backend/package-lock.json).
+
+## Estrutura do projeto
+
+```
+backend/
+├── src/
+│   ├── app.js                 # configuração do Express e rotas
+│   ├── server.js               # inicialização do servidor
+│   ├── database/
+│   │   └── connection.js       # conexão com o PostgreSQL (pg Pool)
+│   ├── routes/                 # definição das rotas
+│   └── controllers/             # regras de negócio de cada rota
+├── sql/
+│   └── schema.sql              # script de criação da tabela
+├── .env                         # variáveis de ambiente (exemplo)
+├── docker-compose.yml
+└── Dockerfile
+```
+
+## Como rodar o projeto
+
+### Opção 1 — Com Docker (recomendado)
+
+
+```bash
+cd backend
+docker compose up --build
+```
+
+Isso sobe dois containers:
+- `postgres-medfutura` — banco de dados PostgreSQL na porta `5432`
+- `backend-medfutura` — a API na porta `3000`
+
+A tabela `pessoas` precisa ser criada manualmente na primeira execução (ver seção **Banco de dados** abaixo).
+
+### Opção 2 — Localmente (sem Docker)
+
+Pré-requisitos: Node.js 22+ e um PostgreSQL rodando localmente.
+
+```bash
+cd backend
+npm install
+```
+
+1. Crie o banco de dados e rode o script `sql/schema.sql` (veja abaixo).
+2. Configure o arquivo `.env` (veja a seção **Variáveis de ambiente**).
+3. Inicie o servidor:
+
+```bash
+npm start
+```
+
+A API sobe em `http://localhost:3000` (ou na porta definida em `PORT`).
+
+## Banco de dados
+
+Antes de usar a API, crie o banco `medfutura` e execute o script [`backend/sql/schema.sql`](./backend/sql/schema.sql):
+
+```sql
+CREATE TABLE pessoas (
+  id SERIAL PRIMARY KEY,
+  apelido VARCHAR(32) UNIQUE NOT NULL,
+  nome VARCHAR(100) NOT NULL,
+  nascimento DATE NOT NULL,
+  stack TEXT[]
+);
+```
+
+Se estiver usando Docker, você pode rodar o script dentro do container do Postgres, por exemplo:
+
+```bash
+docker exec -i postgres-medfutura psql -U postgres -d medfutura < backend/sql/schema.sql
+```
+
+## Variáveis de ambiente
+
+Exemplo de arquivo `.env` (`backend/.env`):
+
+```env
+PORT=3000
+
+DB_HOST=postgres
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=postgres123
+DB_NAME=medfutura
+
+NODE_ENV=development
+NODE_VERSION=24.18.0
+```
+
+> Ao rodar localmente (sem Docker), altere `DB_HOST` para `localhost`.
+
+## Rotas disponíveis
+
+Base URL: `http://localhost:3000`
+
+### 1. Criar pessoa
+
+`POST /pessoas`
+
+**Body (JSON):**
+
+| Atributo   | Obrigatório | Descrição                                              |
+|------------|:-----------:|----------------------------------------------------------|
+| apelido    | Sim         | String única, até 32 caracteres                          |
+| nome       | Sim         | String, até 100 caracteres                                |
+| nascimento | Sim         | Data no formato `AAAA-MM-DD`                              |
+| stack      | Não         | Vetor de strings, cada item com até 32 caracteres          |
+
+**Exemplo de requisição:**
+```json
+{
+  "apelido": "josé",
+  "nome": "José Roberto",
+  "nascimento": "2000-10-01",
+  "stack": ["C#", "Node", "Oracle"]
+}
+```
+
+**Respostas:**
+- `201 Created` — pessoa criada com sucesso
+- `422 Unprocessable Entity` — campo obrigatório ausente/inválido, ou apelido duplicado
+- `400 Bad Request` — outros erros de requisição
+
+---
+
+### 2. Buscar pessoa por id
+
+`GET /pessoas/:id`
+
+**Respostas:**
+- `200 OK` — retorna os dados da pessoa
+- `404 Not Found` — id não encontrado
+
+---
+
+### 3. Buscar pessoas por termo
+
+`GET /pessoas?t=:termo`
+
+Busca pessoas cujo **apelido**, **nome** ou algum item da **stack** contenha o termo informado.
+
+**Respostas:**
+- `200 OK` — retorna uma lista (vazia, se nada for encontrado)
+- `400 Bad Request` — termo não informado
+
+> **Observação:** a busca é feita com `LIKE` (case-sensitive), ou seja, `Node` e `node` são tratados como termos diferentes.
+
+---
+
+### 4. Atualizar pessoa
+
+`PUT /pessoas/:id`
+
+Aceita o mesmo body da criação (`apelido`, `nome`, `nascimento`, `stack`).
+
+**Respostas:**
+- `200 OK` — pessoa atualizada com sucesso
+- `422 Unprocessable Entity` — JSON inválido, campo obrigatório ausente ou apelido já pertence a outra pessoa
+
+---
+
+### 5. Excluir pessoa
+
+`DELETE /pessoas/:id`
+
+**Respostas:**
+- `204 No Content` — pessoa excluída com sucesso
+- `400 Bad Request` — id não encontrado / erro na exclusão
+
+## Observações e limitações
+
+- **Sem middleware de autenticação:** a API não possui sistema de login/autenticação, portanto nenhum middleware de autorização foi adicionado às rotas.
+- Toda a validação de payload (campos obrigatórios, tamanho máximo, formato de data, tipos da `stack`) é feita diretamente nos controllers, sem uso de uma lib de validação externa.
+
+## Diferencial
+
+O projeto inclui `Dockerfile` e `docker-compose.yml` para subir a API e o banco PostgreSQL em containers com um único comando.
